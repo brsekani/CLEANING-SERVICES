@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+/* @tailwind base;
+@tailwind components; */
+@tailwind utilities;
+
+@theme {
+  --font-raleway: "Raleway", sans-serif;
+  --font-montserrat: "Montserrat", sans-serif;
+}
+
+/* Apply Raleway as the default font */
+body {
+  font-family: "Raleway", sans-serif;
+}
+
+.react-datepicker-wrapper {
+  width: 100% !important;
+}
+.react-datepicker__input-container input {
+  width: 100% !important;
+}
