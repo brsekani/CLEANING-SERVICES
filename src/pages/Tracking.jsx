@@ -13,52 +13,47 @@ import {
 import Lottie from "lottie-react";
 import errorAnimation from "../assets/animatedImages/error.json";
 import networkErrorAnimation from "../assets/animatedImages/networkError.json";
-
-const mockBookings = {
-  ABC123: {
-    firstName: "John",
-    lastName: "Doe",
-    phone: "1234567890",
-    email: "john@example.com",
-    service: "Residential Cleaning",
-    city: "London",
-    address: "123 Baker Street",
-    ratePerHour: "$200/hr",
-    status: "Confirmed",
-  },
-  XYZ789: {
-    firstName: "Jane",
-    lastName: "Smith",
-    phone: "9876543210",
-    email: "jane@example.com",
-    service: "Office & Commercial Cleaning",
-    city: "Manchester",
-    address: "45 Kings Road",
-    ratePerHour: "$250/hr",
-    status: "Pending",
-  },
-};
+import { getBookingByReferenceCode } from "../api/bookingService";
 
 const TrackingPage = () => {
   const [trackingId, setTrackingId] = useState("");
   const [bookingDetails, setBookingDetails] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [networkError, setNetworkError] = useState(false);
 
-  const handleTrack = () => {
-    setNetworkError(false);
+  const fetchBookingDetails = async () => {
+    setBookingDetails("");
+    setLoading(true);
     setError("");
+    setNetworkError(false);
 
-    if (Math.random() < 0.1) {
-      setNetworkError(true);
+    if (!trackingId.trim()) {
+      setError("Please enter a valid tracking ID.");
+      setLoading(false);
       return;
     }
 
-    if (mockBookings[trackingId]) {
-      setBookingDetails(mockBookings[trackingId]);
-    } else {
-      setBookingDetails(null);
-      setError("Invalid tracking ID. Please check and try again.");
+    try {
+      const response = await getBookingByReferenceCode(trackingId);
+
+      if (response) {
+        setBookingDetails(response);
+      } else {
+        setError("Unexpected response from the server.");
+      }
+    } catch (err) {
+      console.log("Error:", err);
+
+      if (err.response?.data?.message === "Booking not found") {
+        setError(err.response.data.message);
+      } else if (err.message?.toLowerCase().includes("network")) {
+        setNetworkError(true);
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -71,7 +66,7 @@ const TrackingPage = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
-      className="flex flex-col items-center justify-center min-h-screen bg-gray-100 h-full w-full px-6 py-10"
+      className="flex flex-col items-center justify-center min-h-screen bg-gray-100 h-full w-full px-6 pb-10 pt-32"
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
@@ -97,6 +92,7 @@ const TrackingPage = () => {
           <input
             type="text"
             placeholder="Enter Booking Reference"
+            disabled={loading}
             value={trackingId}
             onChange={(e) => setTrackingId(e.target.value)}
             className="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#11365C]"
@@ -106,10 +102,11 @@ const TrackingPage = () => {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={handleTrack}
+          onClick={fetchBookingDetails}
+          disabled={loading}
           className="w-full bg-[#FFDA6C] text-[#11365C] hover:bg-[#E6C255] font-semibold py-3 rounded-full text-lg transition duration-300"
         >
-          Track Booking
+          {loading ? "Tracking..." : "Track Booking"}
         </motion.button>
 
         {networkError && (
@@ -149,14 +146,13 @@ const TrackingPage = () => {
               <div className="flex items-center gap-2">
                 <FiUser className="text-[#11365C]" />
                 <span>
-                  <strong>Name:</strong> {bookingDetails.firstName}{" "}
-                  {bookingDetails.lastName}
+                  <strong>Name:</strong> {bookingDetails.fullName}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <FiPhone className="text-[#11365C]" />
                 <span>
-                  <strong>Phone:</strong> {bookingDetails.phone}
+                  <strong>Phone:</strong> {bookingDetails.phoneNumber}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -187,7 +183,7 @@ const TrackingPage = () => {
               <div className="flex items-center gap-2">
                 <FiDollarSign className="text-[#11365C]" />
                 <span>
-                  <strong>Rate/hour:</strong> {bookingDetails.ratePerHour}
+                  <strong>Rate/hour:</strong> {bookingDetails.price}
                 </span>
               </div>
 

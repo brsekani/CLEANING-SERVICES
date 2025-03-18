@@ -11,7 +11,7 @@ export default function Header() {
     { name: "Services", href: "services", type: "scroll" },
     { name: "Contact", href: "contact", type: "scroll" },
     { name: "Reviews", href: "reviews", type: "route" },
-    { name: "Admin", href: "/admin", type: "route" },
+    { name: "Admin", href: "/admin-login", type: "route" },
   ];
 
   const location = useLocation();

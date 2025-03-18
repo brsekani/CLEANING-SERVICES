@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 
@@ -22,6 +22,10 @@ const AdminLogin = () => {
       console.log("Login data:", values);
     },
   });
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100 h-full w-full p-4">
@@ -68,7 +72,7 @@ const AdminLogin = () => {
             type="submit"
             className="w-full bg-[#FFDA6C] text-black py-2 rounded-full hover:bg-yellow-500 transition font-bold"
           >
-            Login
+            Logins
           </button>
         </form>
       </div>

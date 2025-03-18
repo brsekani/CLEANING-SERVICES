@@ -4,7 +4,9 @@ import * as Yup from "yup";
 import { Select, TextInput, NumberInput, Textarea } from "@mantine/core";
 import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import axios from "axios";
+import { createBooking } from "../api/bookingService";
+import { DatePickerInput } from "@mantine/dates";
+import { showNotification } from "@mantine/notifications";
 
 // Validation Schema
 const BookingSchema = Yup.object().shape({
@@ -17,14 +19,14 @@ const BookingSchema = Yup.object().shape({
   city: Yup.string().required("Please select your city"),
   hours: Yup.number().min(1, "At least 1 hour is required"),
   address: Yup.string().required("Address is required"),
+  dateForService: Yup.date().required("Date is required").nullable(),
 });
 
 const Booking = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [loading, setLoading] = useState(false); // Loading state
   const [searchParams] = useSearchParams();
   const selectedService = searchParams.get("service") || "";
-
-  console.log(selectedService);
 
   const servicePrices = {
     "Residential Cleaning": 200,
@@ -85,47 +87,48 @@ const Booking = () => {
         <Formik
           initialValues={{
             fullName: "",
-            lastName: "",
             phone: "",
             email: "",
             service: selectedService || "", // Set selectedService here
             city: "",
             address: "",
-            notes: "",
+            dateForService: "",
+            price: 0,
           }}
           validationSchema={BookingSchema}
           onSubmit={async (values, { resetForm }) => {
-            try {
-              console.log("Booking Details:", values);
-              const postData = await axios.post(
-                "http://localhost:4000/booking/",
-                values
-              );
+            setLoading(true);
+            const formattedData = {
+              fullName: values.fullName,
+              email: values.email,
+              phoneNumber: values.phone, // Renamed 'phone' to 'phoneNumber'
+              service: values.service,
+              price: values.price,
+              address: values.address,
+              city: values.city,
+              dateForService: values.dateForService, // Ensure this is captured in the form
+            };
 
-              // Show the success modal
+            try {
+              console.log("Booking Details:", formattedData);
+              await createBooking(formattedData); // Use the function from bookingService.js
               setShowSuccessModal(true);
-              console.log(postData);
+              resetForm();
             } catch (err) {
-              console.log(err);
+              console.error("Error submitting booking:", err);
+              showNotification({
+                title: "Booking Failed",
+                message: err.message,
+                color: "red",
+              });
+            } finally {
+              setLoading(false); // Stop loading
             }
 
-            // Hide the modal after 3 seconds
-            // setTimeout(() => {
-            //   setShowSuccessModal(false);
-            // }, 3000);
-
-            // Reset form fields after submission
-            // resetForm();
+            console.log(values);
           }}
         >
           {({ values, errors, touched, setFieldValue }) => {
-            useEffect(() => {
-              if (values.service) {
-                const servicePrice = servicePrices[values.service] || 0;
-                setFieldValue("price", servicePrice);
-              }
-            }, [values.service, values.hours, setFieldValue]);
-
             return (
               <Form className="grid grid-cols-1 gap-4">
                 <Field name="fullName">
@@ -135,6 +138,7 @@ const Booking = () => {
                       label="Full Name"
                       error={touched.fullName && errors.fullName}
                       styles={{ input: { height: "45px" } }}
+                      disabled={loading}
                     />
                   )}
                 </Field>
@@ -146,6 +150,7 @@ const Booking = () => {
                       label="Phone Number"
                       error={touched.phone && errors.phone}
                       styles={{ input: { height: "45px" } }}
+                      disabled={loading}
                     />
                   )}
                 </Field>
@@ -156,6 +161,7 @@ const Booking = () => {
                       label="Email"
                       error={touched.email && errors.email}
                       styles={{ input: { height: "45px" } }}
+                      disabled={loading}
                     />
                   )}
                 </Field>
@@ -170,8 +176,12 @@ const Booking = () => {
                       }))}
                       placeholder="Choose a service"
                       error={touched.service && errors.service}
-                      onChange={(value) => setFieldValue("service", value)}
+                      onChange={(value) => {
+                        setFieldValue("service", value);
+                        setFieldValue("price", servicePrices[value] || 0); // Update price directly
+                      }}
                       styles={{ input: { height: "45px" } }}
+                      disabled={loading}
                     />
                   )}
                 </Field>
@@ -188,12 +198,13 @@ const Booking = () => {
                       error={touched.city && errors.city}
                       onChange={(value) => setFieldValue("city", value)}
                       styles={{ input: { height: "45px" } }}
+                      disabled={loading}
                     />
                   )}
                 </Field>
                 <NumberInput
-                  value={values.price}
                   label="Price per hour (£)"
+                  value={values.price}
                   readOnly
                   styles={{
                     input: {
@@ -212,17 +223,25 @@ const Booking = () => {
                       placeholder="Enter your address"
                       error={touched.address && errors.address}
                       styles={{ input: { height: "45px" } }}
+                      disabled={loading}
                     />
                   )}
                 </Field>
 
-                <Field name="notes">
+                <Field name="dateForService">
                   {({ field }) => (
-                    <Textarea
+                    <DatePickerInput
                       {...field}
-                      label="Additional Notes (Optional)"
-                      placeholder="Any special instructions?"
+                      value={values.dateForService || null} // Ensures null is handled
+                      onChange={(date) => {
+                        setFieldValue("dateForService", date);
+                      }}
+                      label="Select Date for Service"
+                      placeholder="Pick a date"
+                      error={touched.dateForService && errors.dateForService}
                       styles={{ input: { height: "45px" } }}
+                      minDate={new Date()}
+                      disabled={loading}
                     />
                   )}
                 </Field>
@@ -233,7 +252,7 @@ const Booking = () => {
                   type="submit"
                   className="w-full bg-[#FFDA6C] cursor-pointer text-[#11365C] hover:bg-[#E6C255]  font-semibold py-3 rounded-full text-lg sm:text-xl transition duration-300 ease-in-out"
                 >
-                  Submit Booking
+                  {loading ? "Submitting..." : "Submit Booking"}
                 </motion.button>
               </Form>
             );
@@ -271,7 +290,8 @@ const Booking = () => {
                 Booking Successful!
               </h3>
               <p className="text-gray-700 mt-2">
-                Your cleaning service has been booked successfully.
+                Your cleaning service has been booked successfully. Check your
+                email for your booking code and details.
               </p>
             </div>
             <button
