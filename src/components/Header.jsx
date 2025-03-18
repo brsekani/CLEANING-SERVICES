@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import { Transition } from "@headlessui/react";
-import { IconMenu2, IconX } from "@tabler/icons-react";
+import { FaBars, FaTimes } from "react-icons/fa"; // Using FontAwesome icons from React Icons
 import { Link as ScrollLink, scroller } from "react-scroll"; // For smooth scrolling
 import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom"; // For navigation
 
@@ -43,26 +42,24 @@ export default function Header() {
         </RouterLink>
 
         <nav className="hidden md:flex gap-8 items-center">
-          <nav className="hidden md:flex gap-8 items-center">
-            {links.map((item) => (
-              <button
-                key={item.name}
-                onClick={() => handleScrollOrNavigate(item)}
-                className="text-lg font-medium text-[#11365C] hover:text-[#FFDA6C] transition cursor-pointer"
-              >
-                {item.name}
-              </button>
-            ))}
-          </nav>
+          {links.map((item) => (
+            <button
+              key={item.name}
+              onClick={() => handleScrollOrNavigate(item)}
+              className="text-lg font-medium text-[#11365C] hover:text-[#FFDA6C] transition cursor-pointer"
+            >
+              {item.name}
+            </button>
+          ))}
         </nav>
 
         <div className="flex items-center gap-4">
-          <RouterLink to="/tracking" className="hidden sm:block">
+          <RouterLink to="/tracking" className="hidden md:block">
             <button className="bg-[#FFDA6C] text-[#11365C] px-6 py-3 rounded-full text-lg font-semibold shadow-lg hover:bg-[#E6C255] transition-all duration-300">
               Track Now
             </button>
           </RouterLink>
-          <RouterLink to="/booking" className="hidden sm:block">
+          <RouterLink to="/booking" className="hidden md:block">
             <button className="bg-[#FFDA6C] text-[#11365C] px-6 py-3 rounded-full text-lg font-semibold shadow-lg hover:bg-[#E6C255] transition-all duration-300">
               Book Now
             </button>
@@ -74,61 +71,58 @@ export default function Header() {
           className="md:hidden"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         >
-          {mobileMenuOpen ? <IconX size={28} /> : <IconMenu2 size={28} />}
+          {mobileMenuOpen ? <FaTimes size={28} /> : <FaBars size={28} />}
         </button>
       </div>
 
       {/* Mobile Menu */}
-      <Transition
-        show={mobileMenuOpen}
-        enter="transition ease-out duration-200"
-        enterFrom="opacity-0 scale-95"
-        enterTo="opacity-100 scale-100"
-        leave="transition ease-in duration-150"
-        leaveFrom="opacity-100 scale-100"
-        leaveTo="opacity-0 scale-95"
+      <div
+        className={`fixed inset-0 bg-white flex flex-col items-center justify-center space-y-6 text-lg font-medium shadow-lg transform ${
+          mobileMenuOpen
+            ? "opacity-100 scale-100 transition-opacity duration-200 ease-out"
+            : "opacity-0 scale-95 pointer-events-none transition-opacity duration-150 ease-in"
+        }`}
       >
-        <div className="md:hidden fixed inset-0 bg-white flex flex-col items-center justify-center space-y-6 text-lg font-medium shadow-lg">
-          {/* Close Icon */}
+        {/* Close Icon */}
+        <button
+          className="absolute top-6 right-6"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          <FaTimes size={32} className="text-gray-700 hover:text-gray-900" />
+        </button>
+
+        {links.map((item) => (
           <button
-            className="absolute top-6 right-6"
-            onClick={() => setMobileMenuOpen(false)}
+            key={item.name}
+            onClick={() => {
+              handleScrollOrNavigate(item);
+              setMobileMenuOpen(false);
+            }}
+            className="text-lg font-medium text-[#11365C] hover:text-[#FFDA6C] transition cursor-pointer"
           >
-            <IconX size={32} className="text-gray-700 hover:text-gray-900" />
+            {item.name}
           </button>
+        ))}
 
-          {links.map((item) => (
+        <div className="flex items-center gap-4">
+          <RouterLink to="/tracking">
             <button
-              key={item.name}
-              onClick={() => {
-                handleScrollOrNavigate(item), setMobileMenuOpen(false);
-              }}
-              className="text-lg font-medium text-[#11365C] hover:text-[#FFDA6C] transition cursor-pointer"
+              onClick={() => setMobileMenuOpen(false)}
+              className="bg-[#FFDA6C] text-[#11365C] px-6 py-3 rounded-full text-lg font-semibold shadow-lg hover:bg-[#E6C255] transition-all duration-300"
             >
-              {item.name}
+              Track Now
             </button>
-          ))}
-
-          <div className="flex items-center gap-4">
-            <RouterLink to="/tracking">
-              <button
-                onClick={() => setMobileMenuOpen(false)}
-                className="bg-[#FFDA6C] text-[#11365C] px-6 py-3 rounded-full text-lg font-semibold shadow-lg hover:bg-[#E6C255] transition-all duration-300"
-              >
-                Track Now
-              </button>
-            </RouterLink>
-            <RouterLink to="/booking">
-              <button
-                onClick={() => setMobileMenuOpen(false)}
-                className="bg-[#FFDA6C] text-[#11365C] px-6 py-3 rounded-full text-lg font-semibold shadow-lg hover:bg-[#E6C255] transition-all duration-300"
-              >
-                Book Now
-              </button>
-            </RouterLink>
-          </div>
+          </RouterLink>
+          <RouterLink to="/booking">
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              className="bg-[#FFDA6C] text-[#11365C] px-6 py-3 rounded-full text-lg font-semibold shadow-lg hover:bg-[#E6C255] transition-all duration-300"
+            >
+              Book Now
+            </button>
+          </RouterLink>
         </div>
-      </Transition>
+      </div>
     </header>
   );
 }
