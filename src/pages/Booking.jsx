@@ -4,7 +4,8 @@ import * as Yup from "yup";
 import { Select, TextInput, NumberInput, Textarea } from "@mantine/core";
 import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-
+import axios from "axios";
+import { log } from "console";
 // Validation Schema
 const BookingSchema = Yup.object().shape({
   fullName: Yup.string().required("Full Name is required"),
@@ -22,6 +23,7 @@ const Booking = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [searchParams] = useSearchParams();
   const selectedService = searchParams.get("service") || "";
+
   console.log(selectedService);
 
   const servicePrices = {
@@ -66,15 +68,14 @@ const Booking = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="flex items-center justify-center min-h-screen bg-gray-100 h-full w-full px-6 pt-28 py-5"
-    >
-      <div className="max-w-2xl w-full bg-white p-8 rounded-lg shadow-lg">
-        <h2 className="text-3xl font-bold text-center text-[#11365C] mb-6">
+      className='flex items-center justify-center min-h-screen bg-gray-100 h-full w-full px-6 pt-28 py-5'>
+      <div className='max-w-2xl w-full bg-white p-8 rounded-lg shadow-lg'>
+        <h2 className='text-3xl font-bold text-center text-[#11365C] mb-6'>
           Book a Cleaning Service
         </h2>
-        <p className="text-center text-gray-700 mb-6">
+        <p className='text-center text-gray-700 mb-6'>
           If the service you need is not listed, please{" "}
-          <span className="font-semibold text-[#11365C]">
+          <span className='font-semibold text-[#11365C]'>
             call us at: +123-456-7890
           </span>{" "}
           to book a custom cleaning service.
@@ -92,11 +93,20 @@ const Booking = () => {
             notes: "",
           }}
           validationSchema={BookingSchema}
-          onSubmit={(values, { resetForm }) => {
-            console.log("Booking Details:", values);
+          onSubmit={async (values, { resetForm }) => {
+            try {
+              console.log("Booking Details:", values);
+              const postData = await axios.post(
+                "http://localhost:4000/booking/",
+                values,
+              );
 
-            // Show the success modal
-            setShowSuccessModal(true);
+              // Show the success modal
+              setShowSuccessModal(true);
+              console.log(postData);
+            } catch (err) {
+              console.log(err);
+            }
 
             // Hide the modal after 3 seconds
             // setTimeout(() => {
@@ -105,8 +115,7 @@ const Booking = () => {
 
             // Reset form fields after submission
             // resetForm();
-          }}
-        >
+          }}>
           {({ values, errors, touched, setFieldValue }) => {
             useEffect(() => {
               if (values.service) {
@@ -116,64 +125,64 @@ const Booking = () => {
             }, [values.service, values.hours, setFieldValue]);
 
             return (
-              <Form className="grid grid-cols-1 gap-4">
-                <Field name="fullName">
+              <Form className='grid grid-cols-1 gap-4'>
+                <Field name='fullName'>
                   {({ field }) => (
                     <TextInput
                       {...field}
-                      label="Full Name"
+                      label='Full Name'
                       error={touched.fullName && errors.fullName}
                       styles={{ input: { height: "45px" } }}
                     />
                   )}
                 </Field>
 
-                <Field name="phone">
+                <Field name='phone'>
                   {({ field }) => (
                     <TextInput
                       {...field}
-                      label="Phone Number"
+                      label='Phone Number'
                       error={touched.phone && errors.phone}
                       styles={{ input: { height: "45px" } }}
                     />
                   )}
                 </Field>
-                <Field name="email">
+                <Field name='email'>
                   {({ field }) => (
                     <TextInput
                       {...field}
-                      label="Email"
+                      label='Email'
                       error={touched.email && errors.email}
                       styles={{ input: { height: "45px" } }}
                     />
                   )}
                 </Field>
-                <Field name="service">
+                <Field name='service'>
                   {({ field }) => (
                     <Select
                       {...field}
-                      label="Select a Cleaning Service"
+                      label='Select a Cleaning Service'
                       data={Object.keys(servicePrices).map((key) => ({
                         value: key,
                         label: key.replace(/\b\w/g, (c) => c.toUpperCase()),
                       }))}
-                      placeholder="Choose a service"
+                      placeholder='Choose a service'
                       error={touched.service && errors.service}
                       onChange={(value) => setFieldValue("service", value)}
                       styles={{ input: { height: "45px" } }}
                     />
                   )}
                 </Field>
-                <Field name="city">
+                <Field name='city'>
                   {({ field }) => (
                     <Select
                       {...field}
-                      label="Select Your City"
+                      label='Select Your City'
                       data={ukCities.map((city) => ({
                         value: city,
                         label: city,
                       }))}
-                      placeholder="Choose your city"
+                      placeholder='Choose your city'
                       error={touched.city && errors.city}
                       onChange={(value) => setFieldValue("city", value)}
                       styles={{ input: { height: "45px" } }}
@@ -182,7 +191,7 @@ const Booking = () => {
                 </Field>
                 <NumberInput
                   value={values.price}
-                  label="Price per hour ($)"
+                  label='Price per hour (£)'
                   readOnly
                   styles={{
                     input: {
@@ -193,24 +202,24 @@ const Booking = () => {
                   }}
                 />
 
-                <Field name="address">
+                <Field name='address'>
                   {({ field }) => (
                     <TextInput
                       {...field}
-                      label="Address"
-                      placeholder="Enter your address"
+                      label='Address'
+                      placeholder='Enter your address'
                       error={touched.address && errors.address}
                       styles={{ input: { height: "45px" } }}
                     />
                   )}
                 </Field>
 
-                <Field name="notes">
+                <Field name='notes'>
                   {({ field }) => (
                     <Textarea
                       {...field}
-                      label="Additional Notes (Optional)"
-                      placeholder="Any special instructions?"
+                      label='Additional Notes (Optional)'
+                      placeholder='Any special instructions?'
                       styles={{ input: { height: "45px" } }}
                     />
                   )}
@@ -219,9 +228,8 @@ const Booking = () => {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  type="submit"
-                  className="w-full bg-[#FFDA6C] cursor-pointer text-[#11365C] hover:bg-[#E6C255]  font-semibold py-3 rounded-full text-lg sm:text-xl transition duration-300 ease-in-out"
-                >
+                  type='submit'
+                  className='w-full bg-[#FFDA6C] cursor-pointer text-[#11365C] hover:bg-[#E6C255]  font-semibold py-3 rounded-full text-lg sm:text-xl transition duration-300 ease-in-out'>
                   Submit Booking
                 </motion.button>
               </Form>
@@ -237,36 +245,33 @@ const Booking = () => {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.8 }}
           transition={{ duration: 0.3 }}
-          className="fixed inset-0 flex items-center justify-center backdrop-blur-lg bg-black/30"
-        >
-          <div className="bg-white p-6 rounded-lg shadow-xl text-center max-w-sm animate-fadeIn scale-95">
-            <div className="flex flex-col items-center">
-              <div className="w-16 h-16 flex items-center justify-center bg-[#FFDA6C] rounded-full shadow-md">
+          className='fixed inset-0 flex items-center justify-center backdrop-blur-lg bg-black/30'>
+          <div className='bg-white p-6 rounded-lg shadow-xl text-center max-w-sm animate-fadeIn scale-95'>
+            <div className='flex flex-col items-center'>
+              <div className='w-16 h-16 flex items-center justify-center bg-[#FFDA6C] rounded-full shadow-md'>
                 <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-10 h-10 text-white"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M20 6L9 17l-5-5" />
+                  xmlns='http://www.w3.org/2000/svg'
+                  className='w-10 h-10 text-white'
+                  viewBox='0 0 24 24'
+                  fill='none'
+                  stroke='currentColor'
+                  strokeWidth='2.5'
+                  strokeLinecap='round'
+                  strokeLinejoin='round'>
+                  <path d='M20 6L9 17l-5-5' />
                 </svg>
               </div>
 
-              <h3 className="text-2xl font-semibold text-[#11365C] mt-4">
+              <h3 className='text-2xl font-semibold text-[#11365C] mt-4'>
                 Booking Successful!
               </h3>
-              <p className="text-gray-700 mt-2">
+              <p className='text-gray-700 mt-2'>
                 Your cleaning service has been booked successfully.
               </p>
             </div>
             <button
               onClick={() => setShowSuccessModal(false)}
-              className="mt-6 w-full bg-[#FFDA6C] text-[#11365C] font-semibold py-2 rounded-full hover:bg-[#E6C255] transition duration-300 ease-in-out"
-            >
+              className='mt-6 w-full bg-[#FFDA6C] text-[#11365C] font-semibold py-2 rounded-full hover:bg-[#E6C255] transition duration-300 ease-in-out'>
               Close
             </button>
           </div>

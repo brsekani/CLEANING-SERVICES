@@ -25,7 +25,7 @@ const Home = () => {
   }, []); // ✅ Re-run when URL query changes
 
   return (
-    <section className="bg-gray-100 h-full w-full">
+    <section className='bg-gray-100 h-full w-full'>
       <Hero />
       <AboutUs />
       <Services />
