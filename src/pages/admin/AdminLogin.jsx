@@ -1,6 +1,11 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
+import { useAuth } from "../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+
+const BASE_URL = "http://localhost:4000/admin"; // Replace with actual API URL
 
 const validationSchema = Yup.object({
   email: Yup.string()
@@ -12,14 +17,31 @@ const validationSchema = Yup.object({
 });
 
 const AdminLogin = () => {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
   const formik = useFormik({
     initialValues: {
       email: "",
       password: "",
     },
     validationSchema,
-    onSubmit: (values) => {
-      console.log("Login data:", values);
+    onSubmit: async (values) => {
+      setError("");
+      setLoading(true);
+      try {
+        const response = await axios.post(`${BASE_URL}/login`, values);
+        console.log(response);
+        localStorage.setItem("authToken", response.data.token);
+        login();
+        navigate("/admin/dashboard");
+      } catch (err) {
+        setError(err.response?.data?.message || "Login failed");
+      } finally {
+        setLoading(false);
+      }
     },
   });
 
@@ -28,11 +50,14 @@ const AdminLogin = () => {
   }, []);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 h-full w-full p-4">
+    <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
       <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
         <h2 className="text-2xl font-bold text-center text-gray-700 mb-6">
           Admin Login
         </h2>
+        {error && (
+          <p className="text-red-500 text-sm text-center mb-4">{error}</p>
+        )}
         <form onSubmit={formik.handleSubmit}>
           <div className="mb-4">
             <label className="block text-gray-600 mb-1">Email</label>
@@ -45,9 +70,9 @@ const AdminLogin = () => {
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
             />
-            {formik.touched.email && formik.errors.email ? (
+            {formik.touched.email && formik.errors.email && (
               <p className="text-red-500 text-sm mt-1">{formik.errors.email}</p>
-            ) : null}
+            )}
           </div>
 
           <div className="mb-4">
@@ -61,18 +86,19 @@ const AdminLogin = () => {
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
             />
-            {formik.touched.password && formik.errors.password ? (
+            {formik.touched.password && formik.errors.password && (
               <p className="text-red-500 text-sm mt-1">
                 {formik.errors.password}
               </p>
-            ) : null}
+            )}
           </div>
 
           <button
             type="submit"
             className="w-full bg-[#FFDA6C] text-black py-2 rounded-full hover:bg-yellow-500 transition font-bold"
+            disabled={loading}
           >
-            Logins
+            {loading ? "Logging in..." : "Login"}
           </button>
         </form>
       </div>

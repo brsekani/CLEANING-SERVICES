@@ -6,8 +6,10 @@ import {
   FaChevronDown,
   FaSignOutAlt,
 } from "react-icons/fa";
+import { useAuth } from "../context/AuthContext";
 
-const AdminSidebar = () => {
+const AdminSidebar = ({ onToggle }) => {
+  const { logout } = useAuth();
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const location = useLocation(); // ✅ Get current route
 
@@ -27,6 +29,7 @@ const AdminSidebar = () => {
                   ? "bg-[#FFDA6C] text-[#11365C]"
                   : "hover:bg-gray-100"
               }`}
+              onClick={onToggle}
             >
               <FaHome className="text-xl" />
               <span>Dashboard</span>
@@ -55,8 +58,9 @@ const AdminSidebar = () => {
                 {[
                   { path: "/admin/bookings/all", label: "All" },
                   { path: "/admin/bookings/pending", label: "Pending" },
+                  { path: "/admin/bookings/onGoing", label: "On Going" },
                   { path: "/admin/bookings/canceled", label: "Canceled" },
-                  { path: "/admin/bookings/Processed", label: "Processed" },
+                  { path: "/admin/bookings/Completed", label: "Completed" },
                 ].map((item) => (
                   <li key={item.path}>
                     <Link
@@ -66,6 +70,7 @@ const AdminSidebar = () => {
                           ? "bg-[#FFDA6C] text-[#11365C]"
                           : "hover:bg-gray-100"
                       }`}
+                      onClick={onToggle}
                     >
                       {item.label}
                     </Link>
@@ -79,7 +84,12 @@ const AdminSidebar = () => {
 
       {/* Logout Button */}
       <div className="p-4 border-t border-[#DEE2E6]">
-        <button className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 transition">
+        <button
+          className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 transition"
+          onClick={() => {
+            logout();
+          }}
+        >
           <FaSignOutAlt className="text-xl text-red-500" />
           <span className="text-red-500">Logout</span>
         </button>

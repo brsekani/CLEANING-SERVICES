@@ -1,39 +1,25 @@
-import React, { useState } from "react";
+import React from "react";
 import PropTypes from "prop-types";
+import { Formik, Form, Field, ErrorMessage } from "formik";
+import * as Yup from "yup";
 import { IoClose } from "react-icons/io5";
-import { IoMdCheckmarkCircle, IoMdCloseCircle } from "react-icons/io";
+import { IoMdCloseCircle } from "react-icons/io";
 import StarRating from "./StarRating";
+import { createReview } from "../api/ReviewService";
+import { showNotification } from "@mantine/notifications";
 
-const AddReviewModal = ({ opened, onClose }) => {
-  const [rating, setRating] = useState(1);
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [comments, setComments] = useState("");
-  const [error, setError] = useState("");
+const validationSchema = Yup.object({
+  fullName: Yup.string().trim().required("Full Name is required"),
+  comments: Yup.string().trim().required("Comment is required"),
+  rating: Yup.number().min(1, "Rating is required"),
+});
 
+const AddReviewModal = ({ opened, onClose, setReviews }) => {
   if (!opened) return null;
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!firstName.trim() || !lastName.trim() || !comments.trim()) {
-      setError("All fields are required.");
-      return;
-    }
-    setError("");
-    console.log({ firstName, lastName, rating, comments });
-
-    // Reset form
-    setRating(1);
-    setFirstName("");
-    setLastName("");
-    setComments("");
-    onClose();
-  };
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50 p-4">
       <div className="bg-white p-6 rounded-2xl w-full max-w-md shadow-xl transition-all">
-        {/* Header */}
         <div className="flex justify-between items-center border-b pb-3">
           <h2 className="text-xl font-semibold text-[#11365C]">
             Write a Review
@@ -46,72 +32,93 @@ const AddReviewModal = ({ opened, onClose }) => {
           </button>
         </div>
 
-        {/* Form */}
-        <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
-          <h3 className="text-lg font-bold text-center text-[#11365C]">
-            How Was Your Experience?
-          </h3>
-          <p className="text-sm text-gray-600 text-center">
-            Your feedback helps us improve. Let us know your thoughts!
-          </p>
+        <Formik
+          initialValues={{ fullName: "", comments: "", rating: 1 }}
+          validationSchema={validationSchema}
+          onSubmit={async (values, { setSubmitting, resetForm }) => {
+            const formattedData = {
+              fullName: values.fullName,
+              star: values.rating,
+              comment: values.comments,
+              updatedAt: Date.now(),
+            };
 
-          {/* Star Rating Component */}
-          <div className="flex justify-center">
-            <StarRating rating={rating} setRating={setRating} />
-          </div>
+            try {
+              await createReview(formattedData);
+              setReviews((prevReviews) => [formattedData, ...prevReviews]);
+              showNotification({
+                title: "Success",
+                message: "Review submitted successfully",
+                color: "green",
+              });
+              resetForm();
+              onClose();
+            } catch (err) {
+              showNotification({
+                title: "Error",
+                message: err.message,
+                color: "red",
+              });
+            } finally {
+              setSubmitting(false);
+            }
+          }}
+        >
+          {({ values, setFieldValue, isSubmitting }) => (
+            <Form className="mt-4 space-y-4">
+              <h3 className="text-lg font-bold text-center text-[#11365C]">
+                How Was Your Experience?
+              </h3>
+              <p className="text-sm text-gray-600 text-center">
+                Your feedback helps us improve. Let us know your thoughts!
+              </p>
 
-          {/* First & Last Name Inputs */}
-          <div className="grid grid-cols-2 gap-3">
-            <input
-              type="text"
-              placeholder="First Name"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              className="border border-gray-300 rounded-lg p-3 focus:ring-[#11365C] w-full"
-              required
-            />
-            <input
-              type="text"
-              placeholder="Last Name"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              className="border border-gray-300 rounded-lg p-3 focus:ring-[#11365C] w-full"
-              required
-            />
-          </div>
+              <div className="flex justify-center">
+                <StarRating
+                  rating={values.rating}
+                  setRating={(val) => setFieldValue("rating", val)}
+                />
+              </div>
 
-          {/* Comment Box */}
-          <textarea
-            className="w-full border border-gray-300 rounded-lg p-3 focus:ring-[#11365C] placeholder-gray-400"
-            placeholder="Write your review here..."
-            rows="4"
-            value={comments}
-            onChange={(e) => setComments(e.target.value)}
-            required
-          />
+              <Field
+                type="text"
+                name="fullName"
+                placeholder="Full Name"
+                className="border border-gray-300 rounded-lg p-3 focus:ring-[#11365C] w-full"
+              />
+              <ErrorMessage
+                name="fullName"
+                component="div"
+                className="text-red-600 text-sm"
+              />
 
-          {/* Error Message */}
-          {error && (
-            <div className="flex items-center text-red-600 text-sm font-medium">
-              <IoMdCloseCircle className="mr-2" size={18} />
-              {error}
-            </div>
+              <Field
+                as="textarea"
+                name="comments"
+                placeholder="Write your review here..."
+                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-[#11365C] placeholder-gray-400"
+                rows="4"
+              />
+              <ErrorMessage
+                name="comments"
+                component="div"
+                className="text-red-600 text-sm"
+              />
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className={`w-full py-3 rounded-full text-[#11365C] font-semibold transition-all ${
+                  isSubmitting
+                    ? "bg-gray-300 cursor-not-allowed"
+                    : "bg-[#FFDA6C] hover:bg-[#E6C255]"
+                }`}
+              >
+                {isSubmitting ? "Submitting..." : "Submit Review"}
+              </button>
+            </Form>
           )}
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={!firstName.trim() || !lastName.trim() || !comments.trim()}
-            className={`w-full py-3 rounded-full text-[#11365C] font-semibold transition-all 
-              ${
-                firstName.trim() && lastName.trim() && comments.trim()
-                  ? "bg-[#FFDA6C] hover:bg-[#E6C255]"
-                  : "bg-gray-300 cursor-not-allowed"
-              }`}
-          >
-            Submit Review
-          </button>
-        </form>
+        </Formik>
       </div>
     </div>
   );

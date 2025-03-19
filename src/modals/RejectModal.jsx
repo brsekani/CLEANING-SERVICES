@@ -1,5 +1,5 @@
 import React, { useContext } from "react";
-import { AdminContext } from "../context/AdminContext";
+import { AdminContext } from "../context/AuthContext";
 import { Modal } from "@mantine/core";
 
 const RejectModal = () => {

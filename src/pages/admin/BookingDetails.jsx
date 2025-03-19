@@ -1,34 +1,71 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useContext } from "react";
-import { AdminContext } from "../../context/AdminContext";
-
-const BOOKINGS_DATA = Array.from({ length: 20 }, (_, i) => ({
-  id: i + 1,
-  name: `Customer ${i + 1}`,
-  email: `customer${i + 1}@example.com`,
-  service: ["Cleaning", "Office Cleaning", "Carpet Cleaning", "Housekeeping"][
-    i % 4
-  ],
-  status: ["Pending", "Completed", "Canceled"][i % 3],
-  date: `2024-06-${String(10 + (i % 10)).padStart(2, "0")}`,
-  phone: `+123456789${i}`,
-  address: `123 Street, City ${i + 1}`,
-  notes: `Special request for booking ${i + 1}.`,
-  rate: "$200/hr",
-}));
+import { Select } from "@mantine/core";
+import {
+  getBookingByReferenceCode,
+  updateBookingStatus,
+} from "../../api/bookingService";
+import { showNotification } from "@mantine/notifications";
 
 const BookingDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { openAcceptModal, openRejectModal } = useContext(AdminContext);
 
-  const booking = BOOKINGS_DATA.find((b) => b.id === Number(id));
+  const [booking, setBooking] = useState(null);
+  const [status, setStatus] = useState("Pending");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  if (!booking) {
+  useEffect(() => {
+    const fetchBooking = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const fetchedBooking = await getBookingByReferenceCode(id);
+        if (!fetchedBooking) {
+          throw new Error("Booking not found");
+        }
+        setBooking(fetchedBooking);
+        setStatus(fetchedBooking.status);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBooking();
+  }, [id]);
+
+  const handleStatusChange = async (value) => {
+    setLoading(true);
+    try {
+      const updatedBooking = await updateBookingStatus(booking._id, value);
+      setStatus(updatedBooking.status);
+      showNotification({
+        title: "Successfull",
+        message: `Booking ${booking.id} status updated to ${updatedBooking.status}`,
+        color: "green",
+      });
+    } catch (error) {
+      console.error("Error updating status:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen text-[#0E355D]">
+        <p>Loading booking details...</p>
+      </div>
+    );
+  }
+
+  if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-gray-100 text-[#0E355D]">
-        <h2 className="text-2xl font-bold">Booking Not Found</h2>
+        <h2 className="text-2xl font-bold">{error}</h2>
         <button
           onClick={() => navigate(-1)}
           className="mt-4 px-6 py-2 bg-[#FFDB63] text-[#092742] font-semibold rounded-md hover:bg-[#092742] hover:text-[#FFDB63]"
@@ -39,86 +76,54 @@ const BookingDetails = () => {
     );
   }
 
+  if (!booking) {
+    return null;
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen sm:p-6">
       <button
         onClick={() => navigate(-1)}
         className="mb-4 px-4 py-2 bg-[#FFDB63] text-[#092742] font-semibold rounded-md hover:bg-[#092742] hover:text-[#FFDB63]"
       >
         ← Back
       </button>
-      <div className="max-w-3xl mx-auto bg-white shadow-md rounded-lg p-6 border border-gray-200">
-        <h2 className="text-3xl font-bold text-[#0E355D] mb-4">
+
+      <div className="w-full max-w-4xl bg-white shadow-md rounded-lg p-6 border border-gray-200">
+        <h2 className="text-3xl font-bold text-[#0E355D] mb-4 text-center">
           Booking Details
         </h2>
-        <div className="grid grid-cols-2 gap-4 text-lg">
-          <div>
-            <p className="font-semibold text-[#092742]">Customer:</p>
-            <p className="text-gray-700">{booking.name}</p>
-          </div>
-          <div>
-            <p className="font-semibold text-[#092742]">Email:</p>
-            <p className="text-gray-700">{booking.email}</p>
-          </div>
-          <div>
-            <p className="font-semibold text-[#092742]">Phone:</p>
-            <p className="text-gray-700">{booking.phone}</p>
-          </div>
-          <div>
-            <p className="font-semibold text-[#092742]">Address:</p>
-            <p className="text-gray-700">{booking.address}</p>
-          </div>
-          <div>
-            <p className="font-semibold text-[#092742]">Service:</p>
-            <p className="text-gray-700">{booking.service}</p>
-          </div>
-          <div>
-            <p className="font-semibold text-[#092742]">Rate/hour:</p>
-            <p className="text-gray-700">{booking.rate}</p>
-          </div>
-          <div>
-            <p className="font-semibold text-[#092742]">Date:</p>
-            <p className="text-gray-700">{booking.date}</p>
-          </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-lg">
+          <InfoItem label="Customer" value={booking.fullName} />
+          <InfoItem label="Email" value={booking.email} />
+          <InfoItem label="Phone" value={booking.phoneNumber} />
+          <InfoItem label="Address" value={booking.address} />
+          <InfoItem label="Service" value={booking.service} />
+          <InfoItem label="Rate/hour" value={booking.price} />
+          <InfoItem label="Date" value={booking.dateForService} />
           <div>
             <p className="font-semibold text-[#092742]">Status:</p>
-            <span
-              className={`px-3 py-1 rounded-full text-white ${
-                booking.status === "Pending"
-                  ? "bg-yellow-500"
-                  : booking.status === "Completed"
-                  ? "bg-green-500"
-                  : "bg-red-500"
-              }`}
-            >
-              {booking.status}
-            </span>
-          </div>
-          <div className="col-span-2">
-            <p className="font-semibold text-[#092742]">Notes:</p>
-            <p className="text-gray-700">{booking.notes}</p>
+            <Select
+              data={["Pending", "On-Going", "Completed", "Canceled"]}
+              value={status}
+              onChange={handleStatusChange}
+              disabled={loading}
+              className="mt-2"
+            />
           </div>
         </div>
-
-        {booking.status === "Pending" && (
-          <div className="flex gap-4 mt-6">
-            <button
-              onClick={() => openAcceptModal(booking)}
-              className="px-6 py-2 bg-green-500 text-white font-semibold rounded-md hover:bg-green-600"
-            >
-              Accept
-            </button>
-            <button
-              onClick={() => openRejectModal(booking)}
-              className="px-6 py-2 bg-red-500 text-white font-semibold rounded-md hover:bg-red-600"
-            >
-              Reject
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
 };
+
+// Reusable component for displaying info
+const InfoItem = ({ label, value }) => (
+  <div>
+    <p className="font-semibold text-[#092742]">{label}:</p>
+    <p className="text-gray-700 capitalize">{value || "N/A"}</p>
+  </div>
+);
 
 export default BookingDetails;

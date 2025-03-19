@@ -5,7 +5,7 @@ import { getBookings } from "../../api/bookingService";
 
 const ITEMS_PER_PAGE = 10;
 
-const AllBooking = () => {
+const OnGoingBooking = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [bookings, setBookings] = useState([]);
@@ -16,8 +16,10 @@ const AllBooking = () => {
     const fetchBookings = async () => {
       setLoading(true);
       try {
-        const allBookings = await getBookings("");
-        setBookings(allBookings);
+        const Bookings = await getBookings("On-Going");
+        setBookings(
+          Bookings.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+        );
       } catch (err) {
         setError("Failed to load data.");
         console.error(err);
@@ -29,29 +31,36 @@ const AllBooking = () => {
     fetchBookings();
   }, []);
 
+  // ✅ **Search functionality**
   const filteredBookings = searchQuery.trim()
     ? bookings.filter((booking) =>
-        ["name", "email", "service"].some((key) =>
-          booking[key]?.toLowerCase().includes(searchQuery.toLowerCase())
+        ["fullName", "email", "service"].some((key) =>
+          booking[key]?.toLowerCase().includes(searchQuery.trim().toLowerCase())
         )
       )
     : bookings;
 
+  // ✅ **Pagination setup**
   const totalPages = Math.ceil(filteredBookings.length / ITEMS_PER_PAGE);
   const paginatedBookings = filteredBookings.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
 
+  const nextPage = () =>
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  const prevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+
   return (
     <div className="min-h-screen">
-      <h1 className="text-3xl font-bold text-[#0E355D] mb-6">All Bookings</h1>
-
+      <h1 className="text-3xl font-bold text-[#0E355D] mb-6">
+        On-going Bookings
+      </h1>
       <div className="flex items-center gap-2 mb-6">
         <div className="relative flex-1">
           <input
             type="text"
-            placeholder="Search bookings..."
+            placeholder="Search Completed bookings..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full p-3 pl-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#0E355D]"
@@ -59,21 +68,17 @@ const AllBooking = () => {
           <FaSearch className="absolute top-4 left-3 text-gray-400" />
         </div>
       </div>
-
       {loading ? (
-        <p className="text-center text-gray-500">Loading bookings...</p>
+        <p className="text-center text-gray-600">Loading...</p>
       ) : error ? (
         <p className="text-center text-red-500">{error}</p>
-      ) : filteredBookings.length === 0 ? (
-        <p className="text-center text-gray-500">No bookings found.</p>
       ) : (
         <>
           <BookingTable bookings={paginatedBookings} />
-
-          {totalPages > 1 && (
+          {filteredBookings.length > ITEMS_PER_PAGE && (
             <div className="flex justify-between items-center mt-6">
               <button
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                onClick={prevPage}
                 disabled={currentPage === 1}
                 className={`px-4 py-2 text-[#092742] rounded-full ${
                   currentPage === 1
@@ -83,15 +88,11 @@ const AllBooking = () => {
               >
                 Previous
               </button>
-
               <span className="text-lg font-semibold">
                 Page {currentPage} of {totalPages}
               </span>
-
               <button
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                }
+                onClick={nextPage}
                 disabled={currentPage === totalPages}
                 className={`px-4 py-2 text-[#092742] rounded-full ${
                   currentPage === totalPages
@@ -109,4 +110,4 @@ const AllBooking = () => {
   );
 };
 
-export default AllBooking;
+export default OnGoingBooking;
